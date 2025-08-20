@@ -117,8 +117,8 @@ async def image_to_image(
     image: UploadFile = File(...),
     prompt: str = Form(...),
     use_translation: bool = Form(True),
-    strength: float = Form(0.4),  # 0.75에서 0.4로 낮춤
-    guidance_scale: float = Form(12.0),
+    strength: float = Form(0.15),  # 0.25에서 0.15로 낮춤 (매우 보수적)
+    guidance_scale: float = Form(3.0),  # 7.0에서 3.0으로 낮춤 (매우 부드러운 프롬프트)
     num_inference_steps: int = Form(20),
     model_id: str = Form("stabilityai/stable-diffusion-xl-base-1.0")
 ):

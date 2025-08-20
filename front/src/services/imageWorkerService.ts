@@ -91,8 +91,8 @@ class ImageWorkerService {
       prompt,
       image,
       use_translation: true,
-      strength: 0.4, // 0.75에서 0.4로 낮춤
-      guidance_scale: 12.0,
+      strength: 0.15, // 0.25에서 0.15로 낮춤 (매우 보수적)
+      guidance_scale: 3.0, // 7.0에서 3.0으로 낮춤 (매우 부드러운 프롬프트)
       num_inference_steps: 20,
       model_id: "stabilityai/stable-diffusion-xl-base-1.0",
       ...options,
