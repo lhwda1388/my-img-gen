@@ -80,7 +80,8 @@ class StableDiffusionGenerator:
         height: int = 512,
         width: int = 512,
         guidance_scale: float = 7.5,
-        num_inference_steps: Optional[int] = None
+        num_inference_steps: Optional[int] = None,
+        negative_prompt: Optional[str] = None
     ) -> Image.Image:
         """Generate image from text prompt."""
         pipe = self.load_text_pipeline()
@@ -96,26 +97,39 @@ class StableDiffusionGenerator:
             height = max(height, 1024)
             width = max(width, 1024)
             
-            image = pipe(
-                prompt=prompt,
-                height=height,
-                width=width,
-                guidance_scale=guidance_scale,
-                num_inference_steps=num_inference_steps,
-                # SDXL 특화 파라미터
-                original_size=(height, width),
-                crops_coords_top=0,
-                crops_coords_left=0,
-                target_size=(height, width)
-            ).images[0]
+            # SDXL 파라미터 준비
+            sdxl_params = {
+                "prompt": prompt,
+                "height": height,
+                "width": width,
+                "guidance_scale": guidance_scale,
+                "num_inference_steps": num_inference_steps,
+                "original_size": (height, width),
+                "crops_coords_top": 0,
+                "crops_coords_left": 0,
+                "target_size": (height, width)
+            }
+            
+            # 네거티브 프롬프트 추가
+            if negative_prompt:
+                sdxl_params["negative_prompt"] = negative_prompt
+            
+            image = pipe(**sdxl_params).images[0]
         else:
-            image = pipe(
-                prompt=prompt,
-                height=height,
-                width=width,
-                guidance_scale=guidance_scale,
-                num_inference_steps=num_inference_steps
-            ).images[0]
+            # 일반 Stable Diffusion 파라미터 준비
+            params = {
+                "prompt": prompt,
+                "height": height,
+                "width": width,
+                "guidance_scale": guidance_scale,
+                "num_inference_steps": num_inference_steps
+            }
+            
+            # 네거티브 프롬프트 추가
+            if negative_prompt:
+                params["negative_prompt"] = negative_prompt
+            
+            image = pipe(**params).images[0]
         
         image.save(filename)
         print(f"✅ Saved as: {filename}")
@@ -186,7 +200,7 @@ class StableDiffusionGenerator:
         """Generate multiple images from input image and prompts."""
         images = []
         for i, prompt in enumerate(prompts):
-            filename = f"{base_filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i+1}.png"
+            filename = f"{base_filename}_{i+1}.png"
             image = self.generate_image_to_image(prompt, input_image, filename, **kwargs)
             images.append(image)
         return images
