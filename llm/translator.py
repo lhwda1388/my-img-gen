@@ -8,6 +8,7 @@ model = M2M100ForConditionalGeneration.from_pretrained(model_name)
 
 
 def translate_text(text: str) -> str:
+    # M2M100 번역 실행
     tokenizer.src_lang = "ko"
     encoded = tokenizer(text, return_tensors="pt")
 
@@ -23,4 +24,4 @@ def translate_text(text: str) -> str:
 
 
 if __name__ == "__main__":
-    print(translate_text("털색만 검정색으로 바꿔줘"))
+    print(translate_text("강아지의 털색만 검정색으로 바꿔줘"))
