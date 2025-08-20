@@ -79,16 +79,17 @@ const generateImageToImage = async (payload: ImageToImagePayload) => {
 
     const formData = new FormData();
     formData.append("image", payload.image);
+    formData.append("prompt", payload.prompt);
+    formData.append("use_translation", payload.use_translation.toString());
+    formData.append("strength", payload.strength.toString());
+    formData.append("guidance_scale", payload.guidance_scale.toString());
     formData.append(
-      "request",
-      JSON.stringify({
-        prompt: payload.prompt,
-        use_translation: payload.use_translation,
-        strength: payload.strength,
-        guidance_scale: payload.guidance_scale,
-        num_inference_steps: payload.num_inference_steps,
-        model_id: payload.model_id,
-      })
+      "num_inference_steps",
+      payload.num_inference_steps.toString()
+    );
+    formData.append(
+      "model_id",
+      payload.model_id || "stabilityai/stable-diffusion-xl-base-1.0"
     );
 
     const response = await fetch(`${API_BASE_URL}/generate/image-to-image`, {

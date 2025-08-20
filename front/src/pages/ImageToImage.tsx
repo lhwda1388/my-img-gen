@@ -128,13 +128,13 @@ const ImageToImage: React.FC = () => {
         <div className="result-section">
           <h3>변환된 이미지</h3>
           <img
-            src={`http://localhost:8000/${generatedImage}`}
+            src={`http://localhost:8000/image/${generatedImage}`}
             alt="Generated"
             className="generated-image"
           />
           <div className="image-actions">
             <a
-              href={`http://localhost:8000/${generatedImage}`}
+              href={`http://localhost:8000/image/${generatedImage}`}
               download
               className="btn btn-primary"
             >

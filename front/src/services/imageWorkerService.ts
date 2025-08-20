@@ -70,6 +70,7 @@ class ImageWorkerService {
       guidance_scale: 12.0,
       num_inference_steps: 20,
       model_id: "stabilityai/stable-diffusion-xl-base-1.0",
+      // model_id: "runwayml/stable-diffusion-v1-5",
       ...options,
     };
 

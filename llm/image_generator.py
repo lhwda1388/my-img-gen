@@ -143,7 +143,8 @@ class StableDiffusionGenerator:
         filename: str,
         strength: float = 0.75,
         guidance_scale: float = 7.5,
-        num_inference_steps: Optional[int] = None
+        num_inference_steps: Optional[int] = None,
+        negative_prompt: Optional[str] = None
     ) -> Image.Image:
         """Generate image from input image and prompt."""
         
@@ -154,13 +155,20 @@ class StableDiffusionGenerator:
             
         print(f"📝 Transforming: '{prompt}'")
         
-        image = pipe(
-            prompt=prompt,
-            image=input_image,
-            strength=strength,
-            guidance_scale=guidance_scale,
-            num_inference_steps=num_inference_steps
-        ).images[0]
+        # 파라미터 준비
+        params = {
+            "prompt": prompt,
+            "image": input_image,
+            "strength": strength,
+            "guidance_scale": guidance_scale,
+            "num_inference_steps": num_inference_steps
+        }
+        
+        # 네거티브 프롬프트 추가
+        if negative_prompt:
+            params["negative_prompt"] = negative_prompt
+        
+        image = pipe(**params).images[0]
         
         image.save(filename)
         print(f"✅ Saved as: {filename}")

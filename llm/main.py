@@ -6,7 +6,7 @@ A FastAPI-based service for generating images using Stable Diffusion models.
 
 import os
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -24,14 +24,6 @@ class TextToImageRequest(BaseModel):
     prompt: str
     height: int = 512
     width: int = 512
-    guidance_scale: float = 12.0
-    num_inference_steps: int = 20
-    use_translation: bool = True
-    model_id: str = "stabilityai/stable-diffusion-xl-base-1.0"
-
-class ImageToImageRequest(BaseModel):
-    prompt: str
-    strength: float = 0.75
     guidance_scale: float = 12.0
     num_inference_steps: int = 20
     use_translation: bool = True
@@ -84,15 +76,7 @@ async def health_check():
 
 @app.post("/generate/text-to-image", response_model=GenerationResponse)
 async def text_to_image(request: TextToImageRequest):
-    """
-    Generate image from text prompt.
-    
-    Args:
-        request: Text-to-image generation request
-        
-    Returns:
-        GenerationResponse: Generation result with image paths
-    """
+
     try:
         # Translate prompt if requested
         prompt = request.prompt
@@ -130,19 +114,15 @@ async def text_to_image(request: TextToImageRequest):
 
 @app.post("/generate/image-to-image", response_model=GenerationResponse)
 async def image_to_image(
-    request: ImageToImageRequest,
-    image: UploadFile = File(...)
+    image: UploadFile = File(...),
+    prompt: str = Form(...),
+    use_translation: bool = Form(True),
+    strength: float = Form(0.75),
+    guidance_scale: float = Form(12.0),
+    num_inference_steps: int = Form(20),
+    model_id: str = Form("stabilityai/stable-diffusion-xl-base-1.0")
 ):
-    """
-    Generate image from input image and prompt.
-    
-    Args:
-        request: Image-to-image generation request
-        image: Input image file
-        
-    Returns:
-        GenerationResponse: Generation result with image paths
-    """
+
     try:
         # Validate image file
         if not image.content_type.startswith("image/"):
@@ -153,13 +133,13 @@ async def image_to_image(
         input_image = Image.open(io.BytesIO(image_data)).convert("RGB")
         
         # Translate prompt if requested
-        prompt = request.prompt
-        if request.use_translation:
-            prompt = translate_text(request.prompt)
-            print(f"🌐 번역된 프롬프트: {prompt}")
+        final_prompt = prompt
+        if use_translation:
+            final_prompt = translate_text(prompt)
+            print(f"🌐 번역된 프롬프트: {final_prompt}")
         
         # Create generator
-        generator = create_generator(request.model_id)
+        generator = create_generator(model_id)
         
         # Get negative prompt
         negative_prompt = get_strong_negative_prompt()
@@ -167,12 +147,12 @@ async def image_to_image(
         
         # Generate image
         image = generator.generate_image_to_image(
-            prompt=prompt,
+            prompt=final_prompt,
             input_image=input_image,
             filename=f"img_to_img_{os.getpid()}.png",
-            strength=request.strength,
-            guidance_scale=request.guidance_scale,
-            num_inference_steps=request.num_inference_steps,
+            strength=strength,
+            guidance_scale=guidance_scale,
+            num_inference_steps=num_inference_steps,
             negative_prompt=negative_prompt
         )
         
