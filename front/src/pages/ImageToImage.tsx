@@ -6,6 +6,7 @@ const ImageToImage: React.FC = () => {
   const [prompt, setPrompt] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [strength, setStrength] = useState(0.4); // 기본값 0.4
 
   // Worker 서비스
   const { generateImageToImage } = useImageWorkerService();
@@ -33,7 +34,7 @@ const ImageToImage: React.FC = () => {
 
   const handleGenerate = () => {
     if (!prompt.trim() || !selectedImage) return;
-    generateImageToImage(prompt, selectedImage);
+    generateImageToImage(prompt, selectedImage, { strength });
   };
 
   // 에러나 메시지가 있으면 5초 후 자동으로 클리어
@@ -108,6 +109,36 @@ const ImageToImage: React.FC = () => {
           <div className="char-count">{prompt.length}/100</div>
         </div>
 
+        <div className="input-group">
+          <label htmlFor="strength">
+            변환 강도: {strength.toFixed(2)}
+            <span className="strength-info">
+              {strength <= 0.3
+                ? " (원본 보존)"
+                : strength <= 0.5
+                ? " (적당한 변환)"
+                : strength <= 0.7
+                ? " (강한 변환)"
+                : " (매우 강한 변환)"}
+            </span>
+          </label>
+          <input
+            type="range"
+            id="strength"
+            min="0.1"
+            max="0.9"
+            step="0.05"
+            value={strength}
+            onChange={(e) => setStrength(parseFloat(e.target.value))}
+            disabled={isGenerating}
+            className="strength-slider"
+          />
+          <div className="strength-labels">
+            <span>원본 보존</span>
+            <span>강한 변환</span>
+          </div>
+        </div>
+
         <button
           onClick={handleGenerate}
           disabled={isGenerating || !prompt.trim() || !selectedImage}
@@ -120,6 +151,7 @@ const ImageToImage: React.FC = () => {
           <div className="generation-info">
             <p>🎯 이미지 변환이 백그라운드에서 진행 중입니다.</p>
             <p>다른 페이지로 이동해도 변환은 계속됩니다!</p>
+            <p>⚠️ 이미지 → 이미지는 새로고침 후 복구할 수 없습니다.</p>
           </div>
         )}
       </div>
@@ -128,13 +160,13 @@ const ImageToImage: React.FC = () => {
         <div className="result-section">
           <h3>변환된 이미지</h3>
           <img
-            src={`http://localhost:8000/image/${generatedImage}`}
+            src={`http://localhost:8000/${generatedImage}`}
             alt="Generated"
             className="generated-image"
           />
           <div className="image-actions">
             <a
-              href={`http://localhost:8000/image/${generatedImage}`}
+              href={`http://localhost:8000/${generatedImage}`}
               download
               className="btn btn-primary"
             >
