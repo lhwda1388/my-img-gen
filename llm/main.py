@@ -1,85 +1,239 @@
+"""
+FastAPI Application for Stable Diffusion Image Generation
+
+A FastAPI-based service for generating images using Stable Diffusion models.
+"""
+
+import os
+import uvicorn
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
 from PIL import Image
+import io
+from fastapi.responses import FileResponse
+
 from image_generator import create_generator
 from translator import translate_text
 from negative_prompts import get_strong_negative_prompt
 
 
+# Pydantic models
+class TextToImageRequest(BaseModel):
+    prompt: str
+    height: int = 512
+    width: int = 512
+    guidance_scale: float = 12.0
+    num_inference_steps: int = 20
+    use_translation: bool = True
+    model_id: str = "stabilityai/stable-diffusion-xl-base-1.0"
 
-def text_to_image():
-    print("🎨 Testing Text-to-Image Generation")
-    print("=" * 50)
+class ImageToImageRequest(BaseModel):
+    prompt: str
+    strength: float = 0.75
+    guidance_scale: float = 12.0
+    num_inference_steps: int = 20
+    use_translation: bool = True
+    model_id: str = "stabilityai/stable-diffusion-xl-base-1.0"
+
+class GenerationResponse(BaseModel):
+    success: bool
+    message: str
+    image_paths: List[str] = []
+
+
+# FastAPI app
+app = FastAPI(
+    title="Stable Diffusion Image Generator",
+    description="A FastAPI service for generating images using Stable Diffusion",
+    version="1.0.0"
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {
+        "message": "Stable Diffusion Image Generator API",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "text_to_image": "/generate/text-to-image",
+            "image_to_image": "/generate/image-to-image",
+            "health": "/health",
+            "docs": "/docs"
+        }
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy"}
+
+
+@app.post("/generate/text-to-image", response_model=GenerationResponse)
+async def text_to_image(request: TextToImageRequest):
+    """
+    Generate image from text prompt.
     
-    # Create generator
-    generator = create_generator('stabilityai/stable-diffusion-xl-base-1.0')
-    
-    # Test prompts
-    prompt = input("Enter a prompt: ")
-    # prompt = translate_text(prompt)
-    prompts = [prompt]
+    Args:
+        request: Text-to-image generation request
         
-    # Generate images with enhanced negative prompt
-    negative_prompt = get_strong_negative_prompt()
-    print(f"🛡️ 강화된 네거티브 프롬프트 사용")
-    
-    images = generator.batch_generate_text_to_image(
-        prompts, 
-        base_filename="text_to_img",
-        negative_prompt=negative_prompt,
-        guidance_scale=12.0,  # 더 높은 guidance_scale로 안정성 향상
-        num_inference_steps=20  # 더 많은 단계로 품질 향상
-    )
-    
-    print(f"\n✅ Generated {len(images)} images successfully!")
+    Returns:
+        GenerationResponse: Generation result with image paths
+    """
+    try:
+        # Translate prompt if requested
+        prompt = request.prompt
+        if request.use_translation:
+            prompt = translate_text(request.prompt)
+            print(f"🌐 번역된 프롬프트: {prompt}")
+        
+        # Create generator
+        generator = create_generator(request.model_id)
+        
+        # Get negative prompt
+        negative_prompt = get_strong_negative_prompt()
+        print(f"🛡️ 강화된 네거티브 프롬프트 사용")
+        
+        # Generate image
+        image = generator.generate_text_to_image(
+            prompt=prompt,
+            filename=f"text_to_img_{os.getpid()}.png",
+            height=request.height,
+            width=request.width,
+            guidance_scale=request.guidance_scale,
+            num_inference_steps=request.num_inference_steps,
+            negative_prompt=negative_prompt
+        )
+        
+        return GenerationResponse(
+            success=True,
+            message="Image generated successfully",
+            image_paths=[f"text_to_img_{os.getpid()}.png"]
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
 
 
-def image_to_image():
-    print("\n🎨 Testing Image-to-Image Generation")
-    print("=" * 50)
+@app.post("/generate/image-to-image", response_model=GenerationResponse)
+async def image_to_image(
+    request: ImageToImageRequest,
+    image: UploadFile = File(...)
+):
+    """
+    Generate image from input image and prompt.
     
-    # Create generator with better model
-    generator = create_generator("stabilityai/stable-diffusion-2-1")
-    
-    # Create test input image
-    # test_image = generator.create_test_image(color='blue')
-    # test_image.save("input_image.png")
-    source_img = Image.open("source_img.png")
-    print("📸 Created test input image: input_image.png")
-    prompt = input("Enter a prompt: ")
-    prompt = translate_text(prompt)
-    prompts = [prompt]
-    
-    # Generate images
-    images = generator.batch_generate_image_to_image(
-        prompts,
-        source_img,
-        base_filename="img_to_img",
-        negative_prompt=negative_prompt,
-        guidance_scale=12.0,  # 더 높은 guidance_scale로 안정성 향상
-        num_inference_steps=20  # 더 많은 단계로 품질 향상
-    )
-    
-    print(f"\n✅ Generated {len(images)} transformed images successfully!")
+    Args:
+        request: Image-to-image generation request
+        image: Input image file
+        
+    Returns:
+        GenerationResponse: Generation result with image paths
+    """
+    try:
+        # Validate image file
+        if not image.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Read and convert image
+        image_data = await image.read()
+        input_image = Image.open(io.BytesIO(image_data)).convert("RGB")
+        
+        # Translate prompt if requested
+        prompt = request.prompt
+        if request.use_translation:
+            prompt = translate_text(request.prompt)
+            print(f"🌐 번역된 프롬프트: {prompt}")
+        
+        # Create generator
+        generator = create_generator(request.model_id)
+        
+        # Get negative prompt
+        negative_prompt = get_strong_negative_prompt()
+        print(f"🛡️ 강화된 네거티브 프롬프트 사용")
+        
+        # Generate image
+        image = generator.generate_image_to_image(
+            prompt=prompt,
+            input_image=input_image,
+            filename=f"img_to_img_{os.getpid()}.png",
+            strength=request.strength,
+            guidance_scale=request.guidance_scale,
+            num_inference_steps=request.num_inference_steps,
+            negative_prompt=negative_prompt
+        )
+        
+        return GenerationResponse(
+            success=True,
+            message="Image transformed successfully",
+            image_paths=[f"img_to_img_{os.getpid()}.png"]
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image transformation failed: {str(e)}")
 
+
+@app.get('/image/{image_path}')
+async def get_image_path(image_path: str): 
+    return FileResponse(f"{image_path}")
+
+
+
+@app.get("/models")
+async def get_available_models():
+    """Get list of available models."""
+    models = [
+        {
+            "id": "runwayml/stable-diffusion-v1-5",
+            "name": "Stable Diffusion v1.5",
+            "description": "Standard Stable Diffusion model",
+            "size": "4GB"
+        },
+        {
+            "id": "stabilityai/stable-diffusion-2-1",
+            "name": "Stable Diffusion v2.1",
+            "description": "Improved quality Stable Diffusion model",
+            "size": "4GB"
+        },
+        {
+            "id": "stabilityai/stable-diffusion-xl-base-1.0",
+            "name": "Stable Diffusion XL",
+            "description": "High quality XL model (requires more memory)",
+            "size": "6GB"
+        }
+    ]
+    return {"models": models}
 
 
 def main():
-    """Main function to run all tests."""
-    print("🎨 Refactored Stable Diffusion Test Suite")
-    print("=" * 60)
+    """Main function to run the FastAPI application."""
+    port = int(os.getenv("PORT", 8000))
+    host = os.getenv("HOST", "0.0.0.0")
     
-    try:
-        # Run tests
-        text_to_image()
-        # image_to_image()
-        
-        
-        print("\n" + "=" * 60)
-        print("🎉tests completed successfully!")
-
-    except Exception as e:
-        print(f"\n❌ Error during testing: {e}")
-        import traceback
-        traceback.print_exc()
+    print("🚀 Starting Stable Diffusion Image Generator API...")
+    print(f"📡 Server will be available at: http://{host}:{port}")
+    print(f"📚 API Documentation: http://{host}:{port}/docs")
+    
+    uvicorn.run(
+        "main:app",
+        host=host,
+        port=port,
+        reload=True,
+        log_level="info"
+    )
 
 
 if __name__ == "__main__":

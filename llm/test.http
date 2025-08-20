@@ -1,0 +1,9 @@
+POST http://localhost:8000/generate/text-to-image
+Content-Type: application/json
+
+{
+    "prompt": "레고 그려줘",
+    "height": 512,
+    "width": 512,
+    "use_translation": true
+}
