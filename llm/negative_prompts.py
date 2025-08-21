@@ -9,12 +9,20 @@ STRONG_NEGATIVE_PROMPTS = [
     # 기본 품질 문제
     "blurry, low quality, distorted, deformed, ugly, bad anatomy, watermark, signature, text",
     
-    # 신체 부위 문제
+    # 신체 부위 문제 (강화)
     "extra limbs, missing limbs, floating limbs, mutated hands and fingers, out of frame, mutation, mutated",
     "extra arms, extra legs, disfigured, malformed, mutated, anatomical nonsense, anatomical impossibility",
     "multiple heads, multiple faces, cloned face, gross proportions, malformed limbs",
     "missing arms, missing legs, extra arms, extra legs, mutated hands, fused fingers, too many fingers",
     "long neck, cross-eyed, mutated eyes and pupils, bad anatomy, anatomical impossibility",
+    "multiple arms, multiple legs, extra hands, extra feet, too many fingers, too many toes",
+    "duplicate limbs, cloned limbs, repeated body parts, anatomical duplication, body part multiplication",
+    "six fingers, eight fingers, ten fingers, twelve fingers, extra digits, duplicate digits",
+    "three arms, four arms, five arms, six arms, multiple arms, arm duplication",
+    "three legs, four legs, five legs, six legs, multiple legs, leg duplication",
+    "split limbs, forked limbs, branching limbs, Y-shaped limbs, V-shaped limbs",
+    "anatomical errors, body part errors, limb errors, appendage errors, extremity errors",
+    
     
     # 기타 문제들
     "text, ui, error, cropped, worst quality, low quality, normal quality, jpeg artifacts",
