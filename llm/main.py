@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse
 from image_generator import create_generator
 from translator import translate_text
 from negative_prompts import get_strong_negative_prompt
-
+from positive_prompts import get_positive_prompts
 
 # Pydantic models
 class TextToImageRequest(BaseModel):
@@ -89,11 +89,12 @@ async def text_to_image(request: TextToImageRequest):
         
         # Get negative prompt
         negative_prompt = get_strong_negative_prompt()
+        positive_prompt = get_positive_prompts()    
         print(f"🛡️ 강화된 네거티브 프롬프트 사용")
         
         # Generate image
         image = generator.generate_text_to_image(
-            prompt=prompt,
+            prompt=prompt + " and " + positive_prompt,
             filename=f"text_to_img_{os.getpid()}.png",
             height=request.height,
             width=request.width,
@@ -143,11 +144,12 @@ async def image_to_image(
         
         # Get negative prompt
         negative_prompt = get_strong_negative_prompt()
+        positive_prompt = get_positive_prompts()    
         print(f"🛡️ 강화된 네거티브 프롬프트 사용")
         
         # Generate image
         image = generator.generate_image_to_image(
-            prompt=final_prompt,
+            prompt=final_prompt + " and " + positive_prompt,
             input_image=input_image,
             filename=f"img_to_img_{os.getpid()}.png",
             strength=strength,
@@ -196,6 +198,21 @@ async def get_available_models():
         }
     ]
     return {"models": models}
+
+
+@app.get("/elearning-options")
+async def get_elearning_options():
+    """Get available e-learning prompt options."""
+    from positive_prompts import ELEARNING_PROMPTS, ELEARNING_STYLES, ELEARNING_TONES
+    
+    return {
+        "categories": {
+            category: list(subcategories.keys()) 
+            for category, subcategories in ELEARNING_PROMPTS.items()
+        },
+        "styles": list(ELEARNING_STYLES.keys()),
+        "tones": list(ELEARNING_TONES.keys())
+    }
 
 
 def main():

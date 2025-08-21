@@ -29,6 +29,7 @@ dependencies = [
     "sentencepiece>=0.2.1",
     "sacremoses>=0.1.1",
     "python-multipart>=0.0.20",
+    "peft",
 ]
 
 [project.optional-dependencies]

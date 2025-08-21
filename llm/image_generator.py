@@ -16,13 +16,14 @@ from datetime import datetime
 class StableDiffusionGenerator:
     """A class for generating images using Stable Diffusion."""
     
-    def __init__(self, model_id: str = "runwayml/stable-diffusion-v1-5"):
+    def __init__(self, model_id: str = "runwayml/stable-diffusion-v1-5", lora_weights: Optional[str] = None):
         """Initialize the generator with a model."""
         self.model_id = model_id
         self.device, self.num_steps = self._get_device_info()
         self.text_pipe = None
         self.img2img_pipe = None
         self.is_sdxl = "xl" in model_id.lower()
+        self.lora_weights = lora_weights or "modamsko/lora-sdxl-flatillustration"
         
     def _get_device_info(self) -> Tuple[str, int]:
         """Get device information and optimal inference steps."""
@@ -50,6 +51,18 @@ class StableDiffusionGenerator:
         
         # Move to device after loading
         pipe = pipe.to(self.device)
+        
+        # LoRA 가중치 로드 (PEFT 백엔드가 있는 경우에만)
+        if self.lora_weights:
+            try:
+                pipe.load_lora_weights(self.lora_weights)
+                print(f"✅ LoRA weights loaded: {self.lora_weights}")
+            except Exception as e:
+                print(f"⚠️  LoRA weights loading failed: {e}")
+                print("Continuing without LoRA weights...")
+        else:
+            print("ℹ️  No LoRA weights specified, using base model")
+        
         return pipe
     
     def load_text_pipeline(self):
@@ -214,6 +227,6 @@ class StableDiffusionGenerator:
         return images
 
 
-def create_generator(model_id: str = "runwayml/stable-diffusion-v1-5") -> StableDiffusionGenerator:
+def create_generator(model_id: str = "runwayml/stable-diffusion-v1-5", lora_weights: Optional[str] = None) -> StableDiffusionGenerator:
     """Factory function to create a generator instance."""
-    return StableDiffusionGenerator(model_id)
+    return StableDiffusionGenerator(model_id, lora_weights)

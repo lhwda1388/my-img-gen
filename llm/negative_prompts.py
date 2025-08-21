@@ -23,7 +23,18 @@ STRONG_NEGATIVE_PROMPTS = [
     "long neck, cross-eyed, mutated eyes and pupils, bad anatomy, anatomical impossibility",
     "multiple heads, cloned face, disfigured, gross proportions, malformed, mutated",
     "anatomical nonsense, text, ui, error, cropped, worst quality, low quality",
-    "normal quality, jpeg artifacts, signature, watermark, username, blurry"
+    "normal quality, jpeg artifacts, signature, watermark, username, blurry",
+
+    # 실사 방지 및 삽화 스타일 유도
+    "photorealistic, realistic, photo, photograph, photography, hyperrealistic, hyper-detailed",
+    "3D render, 3D model, 3D art, cinema 4D, blender, octane render, unreal engine, ray tracing",
+    "skin texture, skin pores, skin details, detailed skin, skin imperfections, wrinkles",
+    "high detail, ultra detailed, intricate details, detailed texture, detailed background",
+    
+    # 삽화 스타일 방해 요소
+    "volumetric lighting, subsurface scattering, physically-based rendering, depth of field",
+    "bokeh, motion blur, chromatic aberration, lens flare, film grain, high dynamic range",
+    "photogrammetry, photoscan, lidar scan, 3D scan, real life, real world"
 ]
 
 def get_strong_negative_prompt():
