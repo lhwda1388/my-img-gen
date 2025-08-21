@@ -23,7 +23,8 @@ class StableDiffusionGenerator:
         self.text_pipe = None
         self.img2img_pipe = None
         self.is_sdxl = "xl" in model_id.lower()
-        self.lora_weights = lora_weights or "modamsko/lora-sdxl-flatillustration"
+        # self.lora_weights = lora_weights or "modamsko/lora-sdxl-flatillustration"
+        self.lora_weights = lora_weights or "FLUX-kontext-lora-flat-cartoon-style.safetensors"
         
     def _get_device_info(self) -> Tuple[str, int]:
         """Get device information and optimal inference steps."""
